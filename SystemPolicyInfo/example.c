@@ -109,7 +109,7 @@ int main( void )
 
     const WCHAR* app = L"Microsoft.XboxIdentityProvider_12.67.21001.0_x64__8wekyb3d8bbwe";
 
-
+    status = NtQuerySystemInformation( SystemPolicyInformation, &PolicyInput, sizeof( SYSTEM_POLICY_INFORMATION ), &RetLength );
     printf( "status: 0x%08x\nlength: %i\n", status, RetLength );
 
     return 0;
