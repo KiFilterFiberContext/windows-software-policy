@@ -66,7 +66,7 @@ typedef struct _SLS_KEY
 } SLS_KEY, * PSLS_KEY;
 
 //
-// SPCallServerHandleIsAppLicensed
+// licensemanagerapi!InvokeLicenseManagerRequired -> NtQuerySystemInformation -> ExpQuerySystemInformation -> ExHandleSPCall2 -> SPCall2ServerInternal -> SPCallServerHandleIsAppLicensed -> (no symbols) nt!g_kernelCallbacks[13] (clipsp.sys+0xb6ac0)
 //
 typedef struct _SLS_APP_LICENSED_BODY
 {
@@ -80,13 +80,13 @@ typedef struct _SLS_APP_LICENSED_BODY
     WCHAR* AppName;
 
     ULONG UnknownSizeC; 
-    USHORT UnknownC; // 0
+    USHORT UnknownC; // 0 wchar?
 
     ULONG UnknownSizeD; // 0x1c
     UCHAR Unknown[ 0x1C ]; // 01 05 00 00 00 00 00 05 15 00 00 00 79 da-c9 84 23 e2 f9 82 2c 25 c0 58 e8 03 00 00
 
     ULONG UnknownSizeE;
-    ULONG UnknownE; // 4
+    ULONG UnknownE; // 2
 } SLS_APP_LICENSED_BODY;
 
 //
