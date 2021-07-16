@@ -15,7 +15,8 @@ typedef enum _SYSTEM_POLICY_TYPE
     FileIntegrityQuery,
     NotImplemented = 102,
     IsAppLicensed = 109,
-    ClepKdf = 113,
+    ClepSign = 112,
+    ClepKdf,
     UpdateOsPFNInRegistry = 204, 
     GetAppPolicyValue = 208
 } SYSTEM_POLICY_TYPE;
