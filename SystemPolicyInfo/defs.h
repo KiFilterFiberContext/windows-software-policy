@@ -1,5 +1,83 @@
 #pragma once
 
+
+//
+// struct naming is inferred
+//
+
+//
+// -- clipsp overview (wip) --
+// naming convention: Client License System Policy
+//
+// clipsp has no valid PDB in the MS symbol server unlike most system libraries
+// loading the PDB in IDA will produce invalid instruction disassembly in sections
+// however, symbol information is present in the pdb file
+//
+// llvm-pdbutil.exe dump -publics .\clipsp.pdb | Select-String ClipSp
+// 
+// 46852 | S_PUB32[ size = 44 ] `ClipSpIsDeviceLicensePresent`
+// 55992 | S_PUB32[ size = 52 ] `ClipSpInsertTBActivationPolicyValue`
+// 59096 | S_PUB32[ size = 32 ] `ClipSpDecryptFek`
+// 35228 | S_PUB32[ size = 52 ] `ClipSpCreateDirectoryLicenseHeader`
+// 45600 | S_PUB32[ size = 36 ] `ClipSpIsAppLicensedEx`
+// 56444 | S_PUB32[ size = 36 ] `ClipSpIsWindowsToGo`
+// 32460 | S_PUB32[ size = 40 ] `ClipSpDumpLicenseGroup`
+// 48524 | S_PUB32[ size = 36 ] `ClipSpUpdateLicense`
+// 71156 | S_PUB32[ size = 36 ] `ClipSpUninitialize`
+// 36808 | S_PUB32[ size = 52 ] `ClipSpCreateFileLicenseHeaderAndKey`
+// 61420 | S_PUB32[ size = 32 ] `ClipSpAcRequest`
+// 38676 | S_PUB32[ size = 72 ] `_tlgDefineProvider_annotation__Tlgg_hClipSpProviderProv`
+// 30388 | S_PUB32[ size = 28 ] `ClipSpFreeFek`
+// 72560 | S_PUB32[ size = 28 ] `ClipSpClear`
+// 35508 | S_PUB32[ size = 48 ] `ClipSpQueryLicenseValueFromHost`
+// 60680 | S_PUB32[ size = 48 ] `ClipSpLicenseEfsHeaderContainsFek`
+// 34312 | S_PUB32[ size = 36 ] `ClipSpCheckLicense`
+// 47976 | S_PUB32[ size = 40 ] `ClipSpGetLicenseChallange`
+// 45532 | S_PUB32[ size = 32 ] `ClipSpClepSign`
+// 62960 | S_PUB32[ size = 28 ] `ClipSpClepKdf`
+// 51836 | S_PUB32[ size = 36 ] `ClipSpDecryptFekEx`
+// 70332 | S_PUB32[ size = 48 ] `ClipSpGetBaseContentKeyFromKeyID`
+// 46224 | S_PUB32[ size = 36 ] `ClipSpRemoveLicense`
+// 36164 | S_PUB32[ size = 56 ] `ClipSpGetActivationPolicyValueFromCache`
+// 38064 | S_PUB32[ size = 44 ] `ClipSpGetCurrentHardwareID`
+// 35636 | S_PUB32[ size = 44 ] `ClipSpQueryCachedOptionalInfo`
+// 38476 | S_PUB32[ size = 52 ] `ClipSpGetBaseContentKeyFromLicense`
+// 63444 | S_PUB32[ size = 28 ] `ClipSpAcHmac`
+// 37552 | S_PUB32[ size = 28 ] `ClipSpDump`
+// 34520 | S_PUB32[ size = 32 ] `ClipSpInitialize`
+// 40992 | S_PUB32[ size = 48 ] `ClipSpCreateLicenseKeyIDEfsHeader`
+// 40288 | S_PUB32[ size = 40 ] `ClipSpUpdateOsLicenseBlob`
+// 49032 | S_PUB32[ size = 36 ] `ClipSpIsAppLicensed`
+// 57056 | S_PUB32[ size = 44 ] `ClipSpCreateLicenseEfsHeader`
+// 56076 | S_PUB32[ size = 40 ] `ClipSpGetAppPolicyValue`
+//
+//
+// clipsp contains 6 PAGEwx sections with high (over 7) entropy
+// potentially contains packed code
+// service routine segments (.PAGEwx) must be unpacked prior to execution
+//
+// likely protected by WarBird (microsoft obfuscator)
+// pdb file info includes WarbirdRuntimeGenAsm object file 
+//
+// nt!g_kernelCallbacks contain callbacks for system policy services
+// kd> dqs nt!g_kernelCallbacks
+// fffff801`32d3b350  00000000`00000001
+// fffff801`32d3b358  fffff801`354c6c20 clipsp + 0xb6c20
+// fffff801`32d3b360  fffff801`354c2c30 clipsp + 0xb2c30
+// ...
+//
+// g_kernelCallbacks is initialized in clipsp!ClipSpInitialize
+// nt!PspInitializeServerSiloDeferred -> unnamed function -> nt!ExInitLicenseData -> nt!ClipInitHandles -> clipsp!ClipSpInitialize
+//
+// license policy initialized from registery hive ControlSet001\Control\ProductOptions 
+// license state stored in PspHostSiloGlobals->ExpLicenseState
+// license state structure (_EXP_LICENSE_STATE) is undocumented in pdb type info 
+//
+// usermode interfaces with the software licensing API
+// calls into clipc.dll (client licensing platform client) ?
+// 
+//
+
 //
 // 4 bytes (ulong)
 // methods are mostly undocumented or have no symbol names
@@ -66,8 +144,10 @@ typedef struct _SLS_KEY
     ULONGLONG Key;
 } SLS_KEY, * PSLS_KEY;
 
+
+#define APP_SIZE 64
 //
-// licensemanagerapi!InvokeLicenseManagerRequired -> NtQuerySystemInformation -> ExpQuerySystemInformation -> ExHandleSPCall2 -> SPCall2ServerInternal -> SPCallServerHandleIsAppLicensed -> (no symbols) nt!g_kernelCallbacks[13] (clipsp.sys+0xb6ac0)
+// licensemanagerapi!InvokeLicenseManagerRequired -> NtQuerySystemInformation -> ExpQuerySystemInformation -> ExHandleSPCall2 -> SPCall2ServerInternal -> SPCallServerHandleIsAppLicensed -> (no symbols) nt!g_kernelCallbacks[13] (ClipSpIsAppLicensed)
 //
 typedef struct _SLS_APP_LICENSED_BODY
 {
@@ -78,13 +158,13 @@ typedef struct _SLS_APP_LICENSED_BODY
     ULONG UnknownB; // 3
 
     ULONG MaxStringSize;
-    WCHAR* AppName;
+    WCHAR AppName[APP_SIZE];
 
     ULONG UnknownSizeC; 
-    USHORT UnknownC; // 0 wchar?
-
+    WCHAR UnknownWideChar; // 0x00 
+    
     ULONG UnknownSizeD; // 0x1c
-    UCHAR Unknown[ 0x1C ]; // 01 05 00 00 00 00 00 05 15 00 00 00 79 da-c9 84 23 e2 f9 82 2c 25 c0 58 e8 03 00 00
+    UCHAR UnknownD[28]; // 01 05 00 00 00 00 00 05 15 00 00 00 79 da-c9 84 23 e2 f9 82 2c 25 c0 58 e8 03 00 00
 
     ULONG UnknownSizeE;
     ULONG UnknownE; // 2
@@ -105,7 +185,7 @@ typedef struct _SLS_DECRYPTED_HEADER
     ULONG KeySize;
     SLS_KEY EncryptKey;
 
-    SLS_APP_LICENSED_BODY Body;
+    // SLS_APP_LICENSED_BODY Body;
 } SLS_DECRYPTED_HEADER;
 
 #define SLS_DATA_SIZE 296
@@ -129,7 +209,7 @@ typedef struct _SLS_DECRYPTED_DATA
     ULONG ParameterCount;
     ULONG DecryptedSize;
 
-    SLS_DECRYPTED_HEADER Data;
+    SLS_DECRYPTED_HEADER HeaderData;
 
     ULONG a;
     USHORT b;
