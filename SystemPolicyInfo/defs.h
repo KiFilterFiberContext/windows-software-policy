@@ -76,7 +76,11 @@
 // usermode interfaces with the software licensing API
 // calls into clipc.dll (client licensing platform client) ?
 // 
+// global symbols reveal usage of Warbird UM cipher to encrypt/decrypt data passed into the system policy kernel service
+// WarbirdUmGetDecryptionCipher'::`2'::DecryptionCipher and WarbirdUmGetDecryptionKey'::`2'::nDecryptionKey
+// WarbirdUmGetEncryptionCipher'::`2'::EncryptionCipher and WarbirdUmGetEncryptionKey'::`2'::nEncryptionKey
 //
+// ... deal with clipsp unpacking...
 
 //
 // 4 bytes (ulong)
@@ -84,18 +88,22 @@
 //
 typedef enum _SYSTEM_POLICY_TYPE
 {
-    QueryPolicy = 0,
+    QueryPolicy,
     UpdatePolicies,
     AuthenticateCaller,
     WaitForDisplayWindow = 5,
     FileUsnQuery = 22,
     FileIntegrityUpdate,
     FileIntegrityQuery,
-    NotImplemented = 102,
+    UpdateLicense = 100,
+    RemoveLicense,
+    NotImplemented,
+    GetLicenseChallenge = 105,
     IsAppLicensed = 109,
     ClepSign = 112,
     ClepKdf,
-    UpdateOsPFNInRegistry = 204, 
+    UpdateOsPfnInRegistry = 204, 
+    GetCurrentHardwareID = 206,
     GetAppPolicyValue = 208
 } SYSTEM_POLICY_TYPE;
 
