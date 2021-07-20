@@ -86,7 +86,7 @@
 // 4 bytes (ulong)
 // methods are mostly undocumented or have no symbol names
 //
-typedef enum _SYSTEM_POLICY_TYPE
+typedef enum _SYSTEM_POLICY_CLASS
 {
     QueryPolicy,
     UpdatePolicies,
@@ -105,7 +105,7 @@ typedef enum _SYSTEM_POLICY_TYPE
     UpdateOsPfnInRegistry = 204, 
     GetCurrentHardwareID = 206,
     GetAppPolicyValue = 208
-} SYSTEM_POLICY_TYPE;
+} SYSTEM_POLICY_CLASS;
 
 //
 // 160 byte structure
@@ -126,7 +126,7 @@ typedef enum _SYSTEM_POLICY_TYPE
 // |      2 bytes      | |    0x1F1F1F1F     |  |                0x9E
 // +-------------------+ +-------------------+  |   ----------   0xA0
 // 
-typedef struct _SLS_ENCRYPT_DECRYPT_ARGS
+typedef struct _WB_CIPHER
 {
     //
     // arguments to encryption routines (starts from second to last)
@@ -141,23 +141,23 @@ typedef struct _SLS_ENCRYPT_DECRYPT_ARGS
     // copied in two byte pairs (A, B)
     //
     UCHAR FnIndex[32];
-} SLS_ENCRYPT_DECRYPT_ARGS, * PSLS_ENCRYPT_DECRYPT_ARGS;
+} WB_CIPHER, * PWB_CIPHER;
 
 //
 // key used in argument encryption andd decryption
 // 64 bit
 //
-typedef struct _SLS_KEY
+typedef struct PWB_KEY
 {
     ULONGLONG Key;
-} SLS_KEY, * PSLS_KEY;
+} WB_KEY, * PWB_KEY;
 
 
 #define APP_SIZE 64
 //
 // licensemanagerapi!InvokeLicenseManagerRequired -> NtQuerySystemInformation -> ExpQuerySystemInformation -> ExHandleSPCall2 -> SPCall2ServerInternal -> SPCallServerHandleIsAppLicensed -> (no symbols) nt!g_kernelCallbacks[13] (ClipSpIsAppLicensed)
 //
-typedef struct _SLS_APP_LICENSED_BODY
+typedef struct _SP_APP_LICENSED_BODY
 {
     ULONG UnknownSizeA;
     ULONGLONG UnknownA; // de d0 a6 da a5 10 00 00
@@ -176,25 +176,25 @@ typedef struct _SLS_APP_LICENSED_BODY
 
     ULONG UnknownSizeE;
     ULONG UnknownE; // 2
-} SLS_APP_LICENSED_BODY;
+} SP_APP_LICENSED_BODY;
 
 //
 // Decrypted header
 // Size specified in decrypted data
 //
-typedef struct _SLS_DECRYPTED_HEADER
+typedef struct _SP_DECRYPTED_HEADER
 {
     ULONG PolicyTypeSize;
-    SYSTEM_POLICY_TYPE PolicyType;
+    SYSTEM_POLICY_CLASS PolicyType;
 
     ULONG EncyptArgSize;
-    SLS_ENCRYPT_DECRYPT_ARGS EncryptArgs;
+    WB_CIPHER EncryptArgs;
 
     ULONG KeySize;
-    SLS_KEY EncryptKey;
+    WB_KEY EncryptKey;
 
     // SLS_APP_LICENSED_BODY Body;
-} SLS_DECRYPTED_HEADER;
+} SP_DECRYPTED_HEADER;
 
 #define SLS_DATA_SIZE 296
 
@@ -202,7 +202,7 @@ typedef struct _SLS_DECRYPTED_HEADER
 // > 8 bytes
 // encrypted data appended with xor checksum of decrypted data
 //
-typedef struct _SLS_ENCRYPTED_HEADER
+typedef struct _SP_ENCRYPTED_HEADER
 {
     UCHAR EncryptedBody[ SLS_DATA_SIZE ];
     ULONGLONG XorChkKey;
@@ -212,32 +212,32 @@ typedef struct _SLS_ENCRYPTED_HEADER
 // encrypted input size - 8 bytes (removing XorChkKey?)
 // decrypted header data from block B decryption routine
 //
-typedef struct _SLS_DECRYPTED_DATA
+typedef struct _SP_DECRYPTED_DATA
 {
     ULONG ParameterCount;
     ULONG DecryptedSize;
 
-    SLS_DECRYPTED_HEADER HeaderData;
+    SP_DECRYPTED_HEADER HeaderData;
 
     ULONG a;
     USHORT b;
-} SLS_DECRYPTED_DATA;
+} SP_DECRYPTED_DATA;
 
 //
 // input/output structure for system call
 // block sizes + 12 must equal input length
 //
-typedef struct _SLS_ENCRYPTED_DATA
+typedef struct _SP_ENCRYPTED_DATA
 {
     ULONG EncryptedDataSize;
     SLS_ENCRYPTED_HEADER EncryptedHeaderData;
 
     ULONG DecryptArgSize;
-    SLS_ENCRYPT_DECRYPT_ARGS DecryptArgs;
+    WB_CIPHER DecryptArgs;
 
     ULONG KeySize;
-    SLS_KEY DecryptKey;
-} SLS_ENCRYPTED_DATA, * PSLS_ENCRYPTED_DATA;
+    WB_KEY DecryptKey;
+} SP_ENCRYPTED_DATA, * PSP_ENCRYPTED_DATA;
 
 //            Data
 // +-------------------------+
@@ -274,19 +274,19 @@ typedef struct _SP_DATA
     //
     ULONG EncryptedDataSize;
     ULONG ReservedA;
-    PSLS_ENCRYPTED_DATA EncryptedData;
+    PSP_ENCRYPTED_DATA EncryptedData;
 
     //
     // BlockB size == 0xA0 (160)
     //
     ULONG EncyptDecryptArgSize;
     ULONG ReservedB;
-    PSLS_ENCRYPT_DECRYPT_ARGS EncryptDecryptArgs;
+    PWB_CIPHER EncryptDecryptArgs;
 
     //
     // BlockC size == 0x8
     //
     ULONG KeySize;
     ULONG ReservedC;
-    PSLS_KEY EncryptDecryptKey;
+    PWB_KEY EncryptDecryptKey;
 } SP_DATA;
