@@ -1,5 +1,6 @@
 # SystemPolicyInfo
 Research on the client licensing system in the Windows kernel exposed from the `SystemPolicyInformation` class in the `NtQuerySystemInformation` system call.
+
 **This section is incomplete and will be continously updated**
 
 ## Overview
