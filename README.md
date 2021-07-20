@@ -167,4 +167,4 @@ Internal routines will unpack the code prior to execution and repack afterward. 
 ![image](https://user-images.githubusercontent.com/51222153/126401867-818f7c0d-5b3e-447f-91fc-2d8db6210dec.png)
 
 ## License Internals
-Further analysis can be done after replacing the packed sections with the unpacked code.  `ClipSpInitialize` will call onto `SpInitialize` to populate `g_kernelCallbacks`, setup registry keys and initialize [CNG Providers](https://docs.microsoft.com/en-us/windows/win32/seccertenroll/cng-key-storage-providers) and crytographic keys.
+Further analysis can be done after replacing the packed sections with the unpacked code.  `ClipSpInitialize` will call onto `SpInitialize` to populate `g_kernelCallbacks`, setup registry keys and initialize [CNG Providers](https://docs.microsoft.com/en-us/windows/win32/seccertenroll/understanding-cryptographic-providers) and crytographic keys.
