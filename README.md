@@ -17,8 +17,8 @@ typedef struct _SYSTEM_POLICY_INFORMATION
 } SYSTEM_POLICY_INFORMATION, * PSYSTEM_POLICY_INFORMATION;
 ```
 
-However, not much is known about the arguments passed into the structure.  Information on the class on [MSDN](https://docs.microsoft.com/en-us/windows/win32/api/winternl/nf-winternl-ntquerysysteminformation#system_policy_information) suggests using [SPL API](https://docs.microsoft.com/en-us/windows/win32/api/slpublic/) and the documented routines there.  These routines interface with the Windows software licensing server and likely invoke onto NtQuerySystemInformation internally. 
- 
+However, not much is known about the arguments passed into the structure.  Information on the class on [MSDN](https://docs.microsoft.com/en-us/windows/win32/api/winternl/nf-winternl-ntquerysysteminformation#system_policy_information) suggests using [SL API](https://docs.microsoft.com/en-us/windows/win32/api/slpublic/) and the documented routines there.  These routines interface with the Windows software licensing server. 
+ ...
 The corresponding service that deals with system policy queries (`0x67`) in `NtQuerySystemInformation` is `ExHandleSPCall2`.  The routine will verify that the buffer resides in user address boundaries and will callout to `nt!SPCall2ServerInternal` from `KeExpandKernelStackAndCalloutEx` to expand the stack to `19456` bytes.  
 
 The routine will first parse the input structure that looks like this after a bit of reversing:
