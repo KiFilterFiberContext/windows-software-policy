@@ -97,8 +97,25 @@ def hook_MmUnlockPages(ql, addr, params):
 
 
 @winsdkapi(cc=STDCALL, replace_params={"Mdl": POINTER})
-def hook_IoFreeMdl(ql, addr, params):
+def hook_IoFreeMdl(ql, address, params):
     addr = params['Mdl']
+    
+    if ql.archtype == QL_ARCH.X8664:
+        mdl_buffer = ql.mem.read(addr, ctypes.sizeof(MDL64))
+        mdl = MDL64.from_buffer(mdl_buffer)
+    else:
+        mdl_buffer = ql.mem.read(addr, ctypes.sizeof(MDL32))
+        mdl = MDL32.from_buffer(mdl_buffer)
+
+    size = mdl.Size
+    va = mdl.StartVa.value
+
+    print(f"Dumping {hex(size)} bytes to section_{hex(va)}")
+    
+    mem = ql.mem.read(va, size)
+    with open(f"section_{hex(va)}", "wb") as f:
+        f.write(mem)
+    
     ql.os.heap.free(addr)
     
     return None
@@ -161,6 +178,7 @@ def hook_RtlGetPersistedStateLocation(ql, address, params):
             "\Registry\Machine\System\CurrentControlSet\Control\StateSeparation\RedirectionMap\Files"]
 
     key = keys[state_type]
+    
     print(f"key: {key}")
     print(f"srcid: {readstr_wide(ql, srcid)} {readstr_wide(ql, custom)}")
     
@@ -173,14 +191,6 @@ def trace(ql, address, size, md):
     buf = ql.mem.read(address, size)
     for i in md.disasm(buf, address):
         print(":: 0x%x:\t%s\t%s" %(i.address, i.mnemonic, i.op_str))
-
-
-def dump_mem(ql):
-    mem = ql.mem.read(0x1C00F3000, 0x1000)
-    with open("unpacked.sys", "wb") as f: 
-        f.write(mem) # write extracted code to a binary file
-
-    ql.emu_stop()
 
 
 if __name__ == "__main__":
@@ -209,5 +219,4 @@ if __name__ == "__main__":
     ql.reg.rcx = 0
     ql.reg.rdx = ql.os.heap.alloc(0x30)
 
-    # ql.hook_code(trace, user_data=md)    
-    ql.run(begin=0x1C00BB100, end=0x1C00BB17E)
+    ql.run(begin=0x1C00F98FC, end=0x1C00F992F)
