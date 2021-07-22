@@ -145,7 +145,7 @@ typedef enum _SYSTEM_POLICY_CLASS
     UpdateLicense = 100,
     RemoveLicense,
     NotImplemented,
-    GetLicenseChallenge = 105,
+    GetLicenseChallange = 105,
     IsAppLicensed = 109,
     ClepSign = 112,
     ClepKdf,
@@ -155,15 +155,28 @@ typedef enum _SYSTEM_POLICY_CLASS
 } SYSTEM_POLICY_CLASS;
 ```
 ## License Initialization
-A few of the licensing routines will further dispatch to a function located in a global table, `nt!g_kernelCallbacks`.  This global function table contains function pointers inside of `clipsp.sys`, which handles client license system policy.  During license data initialization, the kernel will first setup license state in a global server silo (`PspHostSiloGlobals->ExpLicenseState`) and will load license values from the registry under `ProductOptions`.  It will then call `ExInitLicenseData` which will update the license data and setup [Kernel Data Production](https://www.microsoft.com/security/blog/2020/07/08/introducing-kernel-data-protection-a-new-platform-security-technology-for-preventing-data-corruption/).  The routine will eventually call `ClipInitHandles`, which initializes globals used for client licensing callbacks along with `g_kernelCallbacks`.  The kernel does not actually setup the global kernel callback table in `ClipInitHandles`, but instead it will pass the table to `ClipSpInitialize` located in `clipsp.sys`.  
+A few of the licensing routines will further dispatch to a function located in a global table, `nt!g_kernelCallbacks`.  This global function table contains function pointers inside of `clipsp.sys`, which handles client license system policy.  During license data initialization, the kernel will first setup license state in a global server silo (`PspHostSiloGlobals->ExpLicenseState`) and will load license values from the registry under `ProductOptions`.  It will then call `ExInitLicenseData` which will update the license data and setup [Kernel Data Protection](https://www.microsoft.com/security/blog/2020/07/08/introducing-kernel-data-protection-a-new-platform-security-technology-for-preventing-data-corruption/).  The routine will eventually call `ClipInitHandles`, which initializes globals used for client licensing callbacks along with `g_kernelCallbacks`.  The kernel does not actually setup the global kernel callback table in `ClipInitHandles`, but instead it will pass the table to `ClipSpInitialize` located in `clipsp.sys`.  
 
 ## Code Unpacking
 
 The client licensing system policy image (`clipsp`) is responsible for handling the internals of system policy functionality in the kernel.  As such, it is obfuscated with Microsoft WarBird to prevent reverse engineering.  The image contains several sections with high entropy (`PAGEwx1` etc.) and names that indicate it will be unpacked and executed during runtime.
 
-Despite having a PDB, it is intentionally not aligned to the image and will produce invalid naming if loaded in IDA.  Manually parsing the PDB will provide symbol names that will be useful for identifying components while reversing the image.
+Despite having a PDB, the signature is not matched to the image.  Manually parsing the PDB will provide symbol names that will be useful for identifying components while reversing the image.
 
-Internal routines will unpack the code prior to execution and repack afterward.  The functions will allocate several [memory descriptor lists](https://docs.microsoft.com/en-us/windows-hardware/drivers/kernel/using-mdls)  (MDLs) to remap the physical pages to a rwx virtual address in system space.  It will then unpack the code and pass the arguments to the real unpacked routine.  A simple method to automatically unpack the encrypted code sections is to emulate the decryption routines with a binary emulation framework such as Qiling.  I have written a simple [unpacker script](https://github.com/encls/SystemPolicyInfo/blob/master/clipsp-unpack.py) in Python that will emulate various kernel APIs and dump the unpacked code once the MDL is freed.
+```
+llvm-pdbutil.exe dump -publics clipsp.pdb | Select-String "ClipSp"
+
+   46852 | S_PUB32 [size = 44] `ClipSpIsDeviceLicensePresent`
+   55992 | S_PUB32 [size = 52] `ClipSpInsertTBActivationPolicyValue`
+   59096 | S_PUB32 [size = 32] `ClipSpDecryptFek`
+   35228 | S_PUB32 [size = 52] `ClipSpCreateDirectoryLicenseHeader`
+   45600 | S_PUB32 [size = 36] `ClipSpIsAppLicensedEx`
+   56444 | S_PUB32 [size = 36] `ClipSpIsWindowsToGo`
+   32460 | S_PUB32 [size = 40] `ClipSpDumpLicenseGroup`
+   ...
+```
+
+Internal routines will unpack the code prior to execution and repack afterward.  Every The functions will allocate several [memory descriptor lists](https://docs.microsoft.com/en-us/windows-hardware/drivers/kernel/using-mdls)  (MDLs) to remap the physical pages to a rwx virtual address in system space.  Dumping the image at runtime will not be reliable as the sections are repacked after execution and only those necessary for execution will be unpacked.  A simple method to automatically unpack the sections is to emulate the decryption routines with a binary emulation framework such as Qiling.  I have written a simple [unpacker script](https://github.com/encls/SystemPolicyInfo/blob/master/clipsp-unpack.py) in Python that will emulate various kernel APIs and dump the unpacked section once the MDL is freed.
 
 ![image](https://user-images.githubusercontent.com/51222153/126401867-818f7c0d-5b3e-447f-91fc-2d8db6210dec.png)
 
