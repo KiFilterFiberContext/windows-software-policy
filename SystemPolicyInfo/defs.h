@@ -152,8 +152,6 @@ typedef struct PWB_KEY
     ULONGLONG Key;
 } WB_KEY, * PWB_KEY;
 
-
-#define APP_SIZE 64
 //
 // licensemanagerapi!InvokeLicenseManagerRequired -> NtQuerySystemInformation -> ExpQuerySystemInformation -> ExHandleSPCall2 -> SPCall2ServerInternal -> SPCallServerHandleIsAppLicensed -> (no symbols) nt!g_kernelCallbacks[13] (ClipSpIsAppLicensed)
 //
@@ -166,7 +164,7 @@ typedef struct _SP_APP_LICENSED_BODY
     ULONG UnknownB; // 3
 
     ULONG MaxStringSize;
-    WCHAR AppName[APP_SIZE];
+    WCHAR AppName[ANYSIZE_ARRAY];
 
     ULONG UnknownSizeC; 
     WCHAR UnknownWideChar; // 0x00 
@@ -196,15 +194,13 @@ typedef struct _SP_DECRYPTED_HEADER
     // SLS_APP_LICENSED_BODY Body;
 } SP_DECRYPTED_HEADER;
 
-#define SLS_DATA_SIZE 296
-
 //
 // > 8 bytes
 // encrypted data appended with xor checksum of decrypted data
 //
 typedef struct _SP_ENCRYPTED_HEADER
 {
-    UCHAR EncryptedBody[ SLS_DATA_SIZE ];
+    UCHAR EncryptedBody[ANYSIZE_ARRAY];
     ULONGLONG XorChkKey;
 } SLS_ENCRYPTED_HEADER;
 
