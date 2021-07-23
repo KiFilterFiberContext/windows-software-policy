@@ -150,7 +150,8 @@ typedef enum _SYSTEM_POLICY_CLASS
     ClepSign = 112,
     ClepKdf,
     UpdateOsPfnInRegistry = 204, 
-    GetCurrentHardwareID = 206,
+    CheckLicense,
+    GetCurrentHardwareID,
     GetAppPolicyValue = 208
 } SYSTEM_POLICY_CLASS;
 ```
