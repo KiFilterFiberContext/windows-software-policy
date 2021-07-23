@@ -55,7 +55,7 @@ decryptionKey = pDecryptionKey;
 *pDecryptionKey = `WarbirdUmGetDecryptionKey'::`2'::nDecryptionKey;
 ```
 
-Microsoft WarBird has been researched in prior years and exposes various different obfuscation passes including virtual-machine obfuscation, code packing, and even functionality integrated the windows kernel to [decrypt and execute signed payloads on the heap using a feistel cipher](https://www.youtube.com/watch?v=gu_i6LYuePg) by exposing a special system information class: `SystemControlFlowInformation`. 
+Microsoft WarBird has been researched in prior years and exposes various different obfuscation passes including virtual-machine obfuscation, code packing, and even functionality integrated the windows kernel to [decrypt and execute signed payloads on the heap using a feistel cipher](https://www.youtube.com/watch?v=gu_i6LYuePg) by exposing a special system information class: `SystemControlFlowTransition`. 
 
 The internal structure parsed by the kernel consists three blocks of data containing the encrypted data, the decryption arguments for the WarBird cipher, and a 64bit decryption key.  The decrypted input data contains the policy information type, argument count, and the cipher arguments and key to encrypt the data.  An XOR checksum for the decrypted data is appended onto the encrypted data and is verified after decryption.  The decryption cipher block is formatted with arguments for cipher subroutines positioned at the top and arguments at the bottom.  The kernel will pass the parameters in reverse order for 16 iterations.  The keys and cipher arguments are hardcoded depending on the policy class.
 ```cpp
