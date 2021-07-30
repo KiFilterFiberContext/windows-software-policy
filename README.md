@@ -188,22 +188,22 @@ Further analysis can be done after replacing the packed sections with the unpack
 NTSTATUS SpInitialize(unsigned int param_1, void *g_kernelCallbacks, unsigned int param_3)
 
 {
-  if ( InitCNGProviders == 0 ) {
-    ReturnStatus = InitCryptoProviders( param_1, g_kernelCallbacks );
+  if (InitCNGProviders == 0) {
+    ReturnStatus = InitCryptoProviders(param_1, g_kernelCallbacks);
     if (ReturnStatus < 0) 
       return ReturnStatus;
     
-    if ( (param_3 & 1) != 0 ) 
-      CloseKeysAndCryptoProviders( &DAT_1c00a4310 );
+    if ((param_3 & 1) != 0) 
+      CloseKeysAndCryptoProviders(&DAT_1c00a4310);
       
-    if ( (param_3 & 2) == 0 ) 
-      SpInitializeReaderWriterLock( &RwLock );
+    if ((param_3 & 2) == 0) 
+      SpInitializeReaderWriterLock(&RwLock);
   
     SLUpdateOsPfnInRegistry();
     InitCNGProviders = 1;
   }
   
-  if ( g_kernelCallbacks ) 
+  if (g_kernelCallbacks) 
   {
     *(code **)(g_kernelCallbacks + 0x26) = FUN_1c00b6da0;
     *(code **)(g_kernelCallbacks + 0x28) = FUN_1c00b5490;
@@ -214,4 +214,4 @@ NTSTATUS SpInitialize(unsigned int param_1, void *g_kernelCallbacks, unsigned in
 }
 ```
 
-The `InitCryptoProviders` subroutine will first verify access rights to a special registry key located at `\\Registry\\Machine\\System\\CurrentControlSet\\Control\\{7746D80F-97E0-4E26-9543-26B41FC22F79}` reserved for digital entitlement.  Access to the specific registry key is intended only for system usage and attempts at accessing it from a unprivileged process will result in `ACCESS_DENIED`.  Furthermore, it will access several subkeys under the same subkey including `{A25AE4F2-1B96-4CED-8007-AA30E9B1A218}`, `{D73E01AC-F5A0-4D80-928B-33C1920C38BA}`, `{59AEE675-B203-4D61-9A1F-04518A20F359}`, `{FB9F5B62-B48B-45F5-8586-E514958C92E2}` and `{221601AB-48C7-4970-B0EC-96E66F578407}`.
+The `InitCryptoProviders` subroutine will first verify access rights to a special registry key located at `\\Registry\\Machine\\System\\CurrentControlSet\\Control\\{7746D80F-97E0-4E26-9543-26B41FC22F79}` reserved for digital entitlement.  Access to the specific registry key is intended only for license use and attempts at accessing it from an unprivileged process will result in `ACCESS_DENIED`.  Furthermore, it will access several subkeys under the same key including `{A25AE4F2-1B96-4CED-8007-AA30E9B1A218}`, `{D73E01AC-F5A0-4D80-928B-33C1920C38BA}`, `{59AEE675-B203-4D61-9A1F-04518A20F359}`, `{FB9F5B62-B48B-45F5-8586-E514958C92E2}` and `{221601AB-48C7-4970-B0EC-96E66F578407}`.
