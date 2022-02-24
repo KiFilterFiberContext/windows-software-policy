@@ -145,14 +145,23 @@ typedef enum _SYSTEM_POLICY_CLASS
     UpdateLicense = 100,
     RemoveLicense,
     NotImplemented,
-    GetLicenseChallange = 105,
+    CreateLicenseEfsHeader,
+    LicenseEfsHeaderContainsFek,
+    GetLicenseChallange,
+    GetBaseContentKeyFromLicense,
+    GetBaseContentKeyFromKeyID,
     IsAppLicensed = 109,
-    ClepSign = 112,
+    DumpLicenseGroup,
+    Clear,
+    ClepSign,
     ClepKdf,
-    UpdateOsPfnInRegistry = 204, 
+    UpdateOsLicenseBlob = 204, 
     CheckLicense,
     GetCurrentHardwareID,
-    GetAppPolicyValue = 208
+    CreateLicenseKeyIDEfsHeader,
+    GetAppPolicyValue,
+    QueryCachedOptionalInfo,
+    AcHmac
 } SYSTEM_POLICY_CLASS;
 ```
 ## License Initialization
@@ -162,56 +171,13 @@ A few of the licensing routines will further dispatch to a function located in a
 
 The client licensing system policy image (`clipsp`) is responsible for handling the internals of system policy functionality in the kernel.  As such, it is obfuscated with Microsoft WarBird to prevent reverse engineering.  The image contains several sections with high entropy (`PAGEwx1` etc.) and names that indicate it will be unpacked and executed during runtime.
 
-Despite having a PDB, the signature is not matched to the image.  Manually parsing the PDB will provide symbol names that will be useful for identifying components while reversing the image.
-
-```
-llvm-pdbutil.exe dump -publics clipsp.pdb | Select-String "ClipSp"
-
-   46852 | S_PUB32 [size = 44] `ClipSpIsDeviceLicensePresent`
-   55992 | S_PUB32 [size = 52] `ClipSpInsertTBActivationPolicyValue`
-   59096 | S_PUB32 [size = 32] `ClipSpDecryptFek`
-   35228 | S_PUB32 [size = 52] `ClipSpCreateDirectoryLicenseHeader`
-   45600 | S_PUB32 [size = 36] `ClipSpIsAppLicensedEx`
-   56444 | S_PUB32 [size = 36] `ClipSpIsWindowsToGo`
-   32460 | S_PUB32 [size = 40] `ClipSpDumpLicenseGroup`
-   ...
-```
-
-Internal routines will unpack the code prior to execution and repack afterward.  Every The functions will allocate several [memory descriptor lists](https://docs.microsoft.com/en-us/windows-hardware/drivers/kernel/using-mdls)  (MDLs) to remap the physical pages to a rwx virtual address in system space.  Dumping the image at runtime will not be reliable as the sections are repacked after execution and only those necessary for execution will be unpacked.  A simple method to automatically unpack the sections is to emulate the decryption routines with a binary emulation framework such as Qiling.  I have written a simple [unpacker script](https://github.com/encls/SystemPolicyInfo/blob/master/clipsp-unpack.py) in Python that will emulate various kernel APIs and dump the unpacked section once the MDL is freed.
+Clipsp will call upon the Warbird Runtime to unpack the code prior to execution and repack afterward.  The functions will allocate several [memory descriptor lists](https://docs.microsoft.com/en-us/windows-hardware/drivers/kernel/using-mdls)  (MDLs) to remap the physical pages to a rwx virtual address in system space.  Dumping the image at runtime will not be reliable as the sections are repacked after execution and only those necessary for execution will be unpacked.  A simple method to automatically unpack the sections is to emulate the decryption routines with a binary emulation framework such as Qiling.  I have written a simple [unpacker script](https://github.com/encls/SystemPolicyInfo/blob/master/clipsp-unpack.py) in Python that will emulate various kernel APIs and dump the unpacked section once the MDL is freed.
 
 ![image](https://user-images.githubusercontent.com/51222153/126401867-818f7c0d-5b3e-447f-91fc-2d8db6210dec.png)
 
 ## License Internals
 Further analysis can be done after replacing the packed sections with the unpacked code.  `ClipSpInitialize` will call onto `SpInitialize` to populate `g_kernelCallbacks`, setup registry keys and initialize [CNG Providers](https://docs.microsoft.com/en-us/windows/win32/seccertenroll/understanding-cryptographic-providers) and crytographic keys.
 
-```cpp
-NTSTATUS SpInitialize(unsigned int param_1, void *g_kernelCallbacks, unsigned int param_3)
+![image](https://user-images.githubusercontent.com/51222153/155431170-b1926650-e231-4bb7-a11e-ce54b9933f53.png)
 
-{
-  if (InitCNGProviders == 0) {
-    ReturnStatus = InitCryptoProviders(param_1, g_kernelCallbacks);
-    if (ReturnStatus < 0) 
-      return ReturnStatus;
-    
-    if ((param_3 & 1) != 0) 
-      CloseKeysAndCryptoProviders(&DAT_1c00a4310);
-      
-    if ((param_3 & 2) == 0) 
-      SpInitializeReaderWriterLock(&RwLock);
-  
-    SLUpdateOsPfnInRegistry();
-    InitCNGProviders = 1;
-  }
-  
-  if (g_kernelCallbacks) 
-  {
-    *(code **)(g_kernelCallbacks + 0x26) = FUN_1c00b6da0;
-    *(code **)(g_kernelCallbacks + 0x28) = FUN_1c00b5490;
-    *(code **)(g_kernelCallbacks + 0x42) = FUN_1c00b9380;
-    *(code **)(g_kernelCallbacks + 0x44) = FUN_1c00b9160;
-    // ... 
-  }
-}
-```
-
-The `InitCryptoProviders` subroutine will first verify access rights to a special registry key located at `\\Registry\\Machine\\System\\CurrentControlSet\\Control\\{7746D80F-97E0-4E26-9543-26B41FC22F79}` reserved for digital entitlement.  Access to the specific registry key is intended only for license use and attempts at accessing it from an unprivileged process will result in `ACCESS_DENIED`.  Furthermore, it will access several subkeys under the same key including `{A25AE4F2-1B96-4CED-8007-AA30E9B1A218}`, `{D73E01AC-F5A0-4D80-928B-33C1920C38BA}`, `{59AEE675-B203-4D61-9A1F-04518A20F359}`, `{FB9F5B62-B48B-45F5-8586-E514958C92E2}` and `{221601AB-48C7-4970-B0EC-96E66F578407}`.
+The `SpInitializeDeviceExtension` subroutine will first verify access rights to a special registry key located at `\\Registry\\Machine\\System\\CurrentControlSet\\Control\\{7746D80F-97E0-4E26-9543-26B41FC22F79}` reserved for digital entitlement.  Access to the specific registry key is intended only for license use and attempts at accessing it from an unprivileged process will result in `ACCESS_DENIED`.  Furthermore, it will access several subkeys under the same key including `{A25AE4F2-1B96-4CED-8007-AA30E9B1A218}`, `{D73E01AC-F5A0-4D80-928B-33C1920C38BA}`, `{59AEE675-B203-4D61-9A1F-04518A20F359}`, `{FB9F5B62-B48B-45F5-8586-E514958C92E2}` and `{221601AB-48C7-4970-B0EC-96E66F578407}`.
