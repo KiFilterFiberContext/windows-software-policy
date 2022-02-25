@@ -161,7 +161,9 @@ typedef enum _SYSTEM_POLICY_CLASS
     CreateLicenseKeyIDEfsHeader,
     GetAppPolicyValue,
     QueryCachedOptionalInfo,
-    AcHmac
+    AcRequest,
+    AcHmac,
+    UpdateImdsResponse
 } SYSTEM_POLICY_CLASS;
 ```
 ## License Initialization
@@ -172,8 +174,6 @@ A few of the licensing routines will further dispatch to a function located in a
 The client licensing system policy image (`clipsp`) is responsible for handling the internals of system policy functionality in the kernel.  As such, it is obfuscated with Microsoft WarBird to prevent reverse engineering.  The image contains several sections with high entropy (`PAGEwx1` etc.) and names that indicate it will be unpacked and executed during runtime.
 
 Clipsp will call upon the Warbird Runtime to unpack the code prior to execution and repack afterward.  The functions will allocate several [memory descriptor lists](https://docs.microsoft.com/en-us/windows-hardware/drivers/kernel/using-mdls)  (MDLs) to remap the physical pages to a rwx virtual address in system space.  Dumping the image at runtime will not be reliable as the sections are repacked after execution and only those necessary for execution will be unpacked.  A simple method to automatically unpack the sections is to emulate the decryption routines with a binary emulation framework such as Qiling.  I have written a simple [unpacker script](https://github.com/encls/SystemPolicyInfo/blob/master/clipsp-unpack.py) in Python that will emulate various kernel APIs and dump the unpacked section once the MDL is freed.
-
-![image](https://user-images.githubusercontent.com/51222153/126401867-818f7c0d-5b3e-447f-91fc-2d8db6210dec.png)
 
 ## License Internals
 Further analysis can be done after replacing the packed sections with the unpacked code.  `ClipSpInitialize` will call onto `SpInitialize` to populate `g_kernelCallbacks`, setup registry keys and initialize [CNG Providers](https://docs.microsoft.com/en-us/windows/win32/seccertenroll/understanding-cryptographic-providers) and crytographic keys.
