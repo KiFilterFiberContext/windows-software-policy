@@ -1,8 +1,6 @@
 # SystemPolicyInfo
 Research on the client licensing system in the Windows kernel exposed from the `SystemPolicyInformation` class in the `NtQuerySystemInformation` system call.
 
-**This section is incomplete and will be continously updated**
-
 ## Overview
 There are two primary usermode services that interact directly with client licensing: `clipc.dll` (Client Licensing Platform Client) and `clipsvc.dll` (Client License Service).  The kernel image that handles client license queries is `clipsp.sys` (Client License System Policy).  As the focus is on the internals of the licensing routines in the kernel, not much will be mentioned about the usermode services.
 
@@ -181,3 +179,10 @@ Further analysis can be done after replacing the packed sections with the unpack
 ![image](https://user-images.githubusercontent.com/51222153/155431170-b1926650-e231-4bb7-a11e-ce54b9933f53.png)
 
 The `SpInitializeDeviceExtension` subroutine will first verify access rights to a special registry key located at `\\Registry\\Machine\\System\\CurrentControlSet\\Control\\{7746D80F-97E0-4E26-9543-26B41FC22F79}` reserved for digital entitlement.  Access to the specific registry key is intended only for license use and attempts at accessing it from an unprivileged process will result in `ACCESS_DENIED`.  Furthermore, it will access several subkeys under the same key including `{A25AE4F2-1B96-4CED-8007-AA30E9B1A218}`, `{D73E01AC-F5A0-4D80-928B-33C1920C38BA}`, `{59AEE675-B203-4D61-9A1F-04518A20F359}`, `{FB9F5B62-B48B-45F5-8586-E514958C92E2}` and `{221601AB-48C7-4970-B0EC-96E66F578407}`.
+
+Further reverse engineering of the individual callbacks requires reverse engineering of the `_EXP_LICENSE_STATE` structure in `_ESERVERSILO_GLOBALS`.
+
+## References
+- [Reversal of Warbird integration in the MSVC compiler](https://github.com/KiFilterFiberContext/warbird-obfuscate)
+- [Warbird Runtime Reversed Engineered Code](https://github.com/KiFilterFiberContext/microsoft-warbird/)
+- [Hooking ClipSp.sys for encrypted shellcode execution](https://github.com/KiFilterFiberContext/warbird-hook/)
